@@ -1,0 +1,271 @@
+<!-- for third party app demo only -->
+<html>
+  <head>
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <style>
+      input.field-search {
+        /*width: 0px !important;*/
+        width: calc(100vw - 120px) !important;
+        vertical-align: middle !important;
+        margin-top: -10px !important;
+      }
+      input.field-search:focus, input.field-search:active {
+        /*width: 100vw !important;*/
+        /*position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        max-height: 64px;*/
+      }
+      label.label-icon {
+        margin-right: 20px;
+      }
+      /*input.field-search:focus + label.label-icon, input.field-search:active + label.label-icon {
+        position: absolute;
+        left: 0;
+      }*/
+      #result-cards {
+        margin-top: 10px;
+        width: 100vw;
+        height: calc(100vh - 70px);
+        position: absolute;
+        background: white;
+        z-index: 10;
+      }
+      #search-bar {
+        padding: 0 20px;
+        color: #222;
+        height: 65px;
+        width: 100vw;
+        background: white;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+      }
+      #search-bar > * {
+        display: inline-block;
+        margin-right: 20px;
+      }
+      .hidden {
+        display: none;
+      }
+      .item-img {
+        height: 64px;
+        width: 64px;
+      }
+    </style>
+
+  </head>
+  <body>
+    <nav>
+      <div class="nav-wrapper  blue darken-3">
+        <div class="container">
+          <a href="#" class="brand">Terega IDAM Public API Test</a>
+          <ul id="nav-mobile" class="right hide-on-med-and-down">
+            <li>
+                <a href="#!" onClick="showSearch();"><i class="material-icons">search</i></a>
+            </li>
+            <li id="search-bar" class="hidden">
+              <i class="material-icons">search</i>
+              <input id="search" class="field-search" type="search" onKeyup="searchFiles(event);" required>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div id="searchResults">
+      <div class="row">
+        <div id="result-cards" class="col s12 m4 l3 hidden">
+          <div class="nav-wrapper" st>
+            <ul>
+              <li><a href="javascript:void(0);" onClick="hideSearch();"><i class="material-icons left">chevron_left</i>Back</a></li>
+            </ul>
+          </div>
+          <div id="items"></div>
+        </div>
+      </div>
+    </div>
+    <div id="mainContainer" class="container">
+      <h4>Set API token</h4>
+      <div class="row">
+        <div class="input-field col s6">
+          <input id="apiKey" type="text">
+          <label for="apiKey">Enter your API key here</label>
+        </div>
+      </div>
+      <h4>Demo: Search</h4>
+      <div class="row">
+        <div class="input-field col s6">
+          <input id="namespace" type="text">
+          <label for="namespace">(If no API key) Enter your domain id</label>
+        </div>
+        <div class="input-field col s3">
+          <button class="btn waves-effect waves-light blue darken-3" type="button" onClick="showSearch();">Search files</button>
+        </div>
+      </div>
+      <h4>Demo: Upload Files</h4>
+      <form id="myForm" class="col s4" onSubmit="onSubmit(event)">
+        <div class="row">
+          <div class="col s12">
+            <input id="files" onChange="displayFiles();" multiple="multiple" type="file" style="display: none;" />
+            <button class="btn waves-effect waves-light blue darken-3" type="button" onClick="document.getElementById('files').click();">Select Files</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col s12">
+            <button class="btn waves-effect waves-light blue darken-3" type="submit">Submit</button>
+            <button class="btn waves-effect waves-light white black-text" type="button" onClick="resetForm();">Reset</button>
+          </div>
+        </div>
+        <div class="row">
+          <table class="striped">
+            <thead>
+              <tr>
+                  <th>File</th>
+                  <th>Uploaded</th>
+              </tr>
+            </thead>
+            <tbody id="status">
+              <tr><td colspan="2"><center>No files</center></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </form>
+    </div>
+    <script>
+      // TODO: Change to Apigee API
+      const uploadApi = 'https://api-dot-terega-idam-devt.appspot.com/files/upload';
+      const searchApi = 'https://api-dot-terega-idam-devt.appspot.com/search';
+      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lc3BhY2UiOiJwZXJtaXNzaW9uZm91ciIsInN1YiI6NSwiYXVkIjoiZThhY2ViZTAtMGZmZC0xMWU5LTk4MzEtMjllZTU2N2M1MzQzIiwiaXNzIjoidGVyZWdhLWlkYW0tcHJvZHVjdGlvbi5hcHBzcG90LmNvbSIsImlhdCI6MTU0NjU5MTg4MX0.HQfb6tGYjJoKrcISRHVar65uwrPwin8Eshe1lhM2G4o';
+
+      const mainContainer = document.getElementById('mainContainer');
+      const searchResultsContainer = document.getElementById('result-cards');
+      const searchResultsItemsContainer = document.getElementById('items');
+      const statusContainer = document.getElementById('status');
+      const searchBarContainer = document.getElementById('search-bar');
+      const inputApiKey = document.getElementById('apiKey');
+      const inputSearch = document.getElementById('search');
+      const inputNamespace = document.getElementById('namespace');
+      let searchText = '';
+      let offset = 1;
+      let matchType = '';
+      let sphereId = '';
+      let files = [];
+      let timeout;
+      const noImageUrl = 'https://cdn11.bigcommerce.com/s-6k7uumqvet/stencil/6962af60-7956-0136-86e8-0f5989f68d97/e/0252a7f0-3aeb-0136-1dc5-0242ac110007/img/no-image.svg';
+      function hideSearch() {
+        searchBarContainer.classList.add('hidden');
+        searchResultsContainer.classList.add('hidden');
+        searchResultsItemsContainer.innerHTML = '';
+      }
+      function showSearch() {
+        searchBarContainer.classList.remove('hidden');
+        searchResultsContainer.classList.remove('hidden');
+        inputSearch.focus();
+      }
+      function searchFiles(e) {
+        // e.preventDefault();
+        if (timeout) {
+          clearTimeout(timeout);
+          timeout = null;
+        }
+        timeout = setTimeout(search, 1000);
+        function search() {
+          if (e.target.value !== searchText) {
+            offset = 1;
+            searchText = e.target.value;
+            files = [];
+            searchResultsItemsContainer.innerHTML = '';
+          }
+          const headers = {};
+          if (inputApiKey.value.length > 0) {
+            headers.Authorization = `Bearer ${inputApiKey.value}`;
+          }
+          fetch(`${searchApi}?query=${searchText}&offset=${offset}&matchType=${matchType}&sphereId=${sphereId}&namespace=${inputNamespace.value}`, {
+            headers: new Headers(headers),
+            method: 'GET',
+          }).then((res) => res.json())
+          .then((res) => {
+            const results = res.data.searches;
+            files = files.concat(results);
+            for (let i = 0; i < results.length; i++) {
+              searchResultsItemsContainer.innerHTML += `
+                <div>
+                  <a class="carousel-item" href="#!">
+
+                      <img class="responsive-img item-img" src="${results[i].thumbnailUrl}" onerror="if (this.src != '${noImageUrl}') this.src = '${noImageUrl}';"/>
+
+                    <div>${results[i].name}</div>
+                  </a>
+                </div>
+              `;
+            }
+          });
+        }
+      }
+      function resetForm() {
+        statusContainer.innerHTML = '<tr><td colspan="2"><center>No files</center></td></tr>';
+        document.getElementById('myForm').reset();
+      }
+      function displayFiles() {
+        const files = document.getElementById('files').files;
+        statusContainer.innerHTML = '';
+        for (let i = 0; i < files.length; i++) {
+          const name = files[i].name;
+          statusContainer.innerHTML += `<tr id="file-${name}"><td>${name}</td><td>0%</td></tr>`;
+        }
+      }
+      function onSubmit(event) {
+        event.preventDefault();
+        const files = document.getElementById('files').files;
+        // console.log("submitting===", files);
+
+        for (let i = 0; i < files.length; i++) {
+          const formData = new FormData();
+          const name = files[i].name;
+          const fileUploadDiv = document.getElementById(`file-${name}`);
+          formData.append(name, files[i]);
+          formData.append('sphereId', 1);
+          formData.append('privacy', 'PUBLIC');
+          let hasError = false;
+          const xhr = new XMLHttpRequest();
+          // TODO: Supply headers needed for Apigee API
+          xhr.open('post', uploadApi, true);
+          xhr.setRequestHeader('Authorization', `Bearer ${inputApiKey.value}`);
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const percentage = ((e.loaded / e.total) * 100).toFixed(2);
+              console.log(name, `${percentage}%`);
+              fileUploadDiv.innerHTML = `<td>${name}</td><td>${percentage}%</td>`;
+            }
+          };
+
+          xhr.onerror = (e) => {
+            console.log(name, 'Error');
+            console.log(name, e);
+            hasError = true;
+          };
+          xhr.onload = () => {
+            console.log(name, this.statusText);
+          };
+          xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4) { // if complete
+              if (xhr.status === 200) { // check if "OK" (200)
+                // success
+              } else {
+                fileUploadDiv.innerHTML = `<td>${name}</td><td>0%</td>`;
+                alert(`[${xhr.status}] Cannot upload ${name}`);
+              }
+            }
+          };
+          xhr.send(formData);
+        }
+      }
+    </script>
+  </body>
+</html>
