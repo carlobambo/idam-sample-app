@@ -228,7 +228,7 @@
           const fileUploadDiv = document.getElementById(`file-${name}`);
           formData.append(name, files[i]);
           formData.append('sphereId', 1);
-          formData.append('privacy', 'PUBLIC');
+          formData.append('privacy', 'STANDARD');
           let hasError = false;
           const xhr = new XMLHttpRequest();
           // TODO: Supply headers needed for Apigee API
