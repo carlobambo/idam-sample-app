@@ -100,8 +100,8 @@
       </div>
       <h4>Demo: Search</h4>
       <div class="row">
-        <div class="input-field col s6">
-          <input id="namespace" type="text">
+        <div class="input-field col s6 hidden">
+          <input id="namespace" type="text" value="terega">
           <label for="namespace">(If no API key) Enter your namespace</label>
         </div>
         <div class="input-field col s3">
@@ -141,7 +141,6 @@
       // TODO: Change to Apigee API
       const uploadApi = 'https://api-dot-terega-idam-devt.appspot.com/files/upload';
       const searchApi = 'https://api-dot-terega-idam-devt.appspot.com/search';
-      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lc3BhY2UiOiJwZXJtaXNzaW9uZm91ciIsInN1YiI6NSwiYXVkIjoiZThhY2ViZTAtMGZmZC0xMWU5LTk4MzEtMjllZTU2N2M1MzQzIiwiaXNzIjoidGVyZWdhLWlkYW0tcHJvZHVjdGlvbi5hcHBzcG90LmNvbSIsImlhdCI6MTU0NjU5MTg4MX0.HQfb6tGYjJoKrcISRHVar65uwrPwin8Eshe1lhM2G4o';
 
       const mainContainer = document.getElementById('mainContainer');
       const searchResultsContainer = document.getElementById('result-cards');
@@ -197,9 +196,7 @@
               searchResultsItemsContainer.innerHTML += `
                 <div>
                   <a class="carousel-item" href="#!">
-
                       <img class="responsive-img item-img" src="${results[i].thumbnailUrl}" onerror="if (this.src != '${noImageUrl}') this.src = '${noImageUrl}';"/>
-
                     <div>${results[i].name}</div>
                   </a>
                 </div>
