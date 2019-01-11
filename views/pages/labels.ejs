@@ -1,0 +1,157 @@
+<h5>Labels</h5>
+<h6>[GET] /labels</h6>
+<div class="col s4">
+  <div class="row">
+    <div class="col s12">
+      <button class="btn waves-effect waves-light blue darken-3" type="button" onClick="listLabels();">List labels</button>
+    </div>
+  </div>
+  <div class="row">
+    <table class="striped">
+      <thead>
+        <tr>
+            <th>ID</th>
+            <th>Label</th>
+        </tr>
+      </thead>
+      <tbody id="labelList">
+        <tr><td colspan="2"><center>No labels</center></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<h6>[POST] /labels</h6>
+<div class="col s4">
+  <div class="row">
+    <div class="input-field col s3">
+      <input id="labelName" type="text">
+      <label for="labelName">Label Name</label>
+    </div>
+    <div class="input-field col s3">
+      <button class="btn waves-effect waves-light blue darken-3" type="button" onClick="postLabel();">Create</button>
+    </div>
+  </div>
+  <div class="row">
+    <pre id="createLabel"></pre>
+  </div>
+</div>
+<h6>[GET] /labels/:id</h6>
+<div class="col s4">
+  <div class="row">
+    <div class="input-field col s3">
+      <input id="labelId" type="text">
+      <label for="labelId">Label ID</label>
+    </div>
+    <div class="input-field col s3">
+      <button class="btn waves-effect waves-light blue darken-3" type="button" onClick="getLabel();">Get</button>
+    </div>
+  </div>
+  <div class="row">
+    <pre id="getLabel"></pre>
+  </div>
+</div>
+<script>
+  // Containers
+  const labelListContainer = document.getElementById('labelList');
+  const outputLabelCreate = document.getElementById('createLabel');
+  const outputLabelGet = document.getElementById('getLabel');
+
+  // Input fields
+  const inputLabelId = document.getElementById('labelId');
+
+  let labels = [];
+
+  // Label list functions START
+  function listLabels() {
+    const headers = {};
+    if (inputApiKey.value.length > 0) {
+      headers.Authorization = `Bearer ${inputApiKey.value}`;
+    }
+    fetch(`${labelsApi}`, {
+      headers: new Headers(headers),
+      method: 'GET',
+    }).then((res) => res.json())
+    .then((res) => {
+      console.log("===res", res)
+      if (res.errors) {
+        console.error("GET /labels", res.errors);
+        alert(`[${res.status}] Cannot list labels`);
+        return;
+      }
+      const results = res.data.labels;
+      labels = labels.concat(results);
+      if (results.length == 0) {
+        labelListContainer.innerHTML += `
+          <tr><td colspan="2">No labels found</td></tr>
+        `;
+      } else {
+        labelListContainer.innerHTML = '';
+      }
+      for (let i = 0; i < results.length; i++) {
+        labelListContainer.innerHTML += `
+          <tr><td>${results[i].id}</td><td>${results[i].name}</td></tr>
+        `;
+      }
+    }).catch((err) => {
+      console.error("===err", err)
+      alert(`[${err}] Cannot list labels`);
+    });
+  }
+  // Label list functions END
+
+
+
+  // Label get functions START
+  function getLabel() {
+    const headers = {};
+    if (inputApiKey.value.length > 0) {
+      headers.Authorization = `Bearer ${inputApiKey.value}`;
+    }
+    fetch(`${labelsApi}/${inputLabelId.value}`, {
+      headers: new Headers(headers),
+      method: 'GET',
+    }).then((res) => res.json())
+    .then((res) => {
+      console.log("===res", res)
+      if (res.errors) {
+        console.error(`GET /labels/${inputLabelId.value}`, res.errors);
+        alert(`[${res.status}] Cannot get label`);
+        return;
+      }
+      outputLabelGet.innerHTML = JSON.stringify(res, undefined, 2);
+    }).catch((err) => {
+      console.error("===err", err)
+      alert(`[${err}] Cannot get label`);
+    });
+  }
+  // Label get functions END
+
+
+
+  // Label post functions START
+  function postLabel() {
+    const headers = {};
+    if (inputApiKey.value.length > 0) {
+      headers.Accept = 'application/json';
+      headers.Authorization = `Bearer ${inputApiKey.value}`;
+      headers['Content-Type'] = 'application/json';
+    }
+    fetch(`${labelsApi}`, {
+      headers: new Headers(headers),
+      method: 'POST',
+    }).then((res) => res.json())
+    .then((res) => {
+      console.log("===res", res)
+      if (res.errors) {
+        console.error('POST /labels', res.errors);
+        alert(`[${res.status}] Cannot post label`);
+        return;
+      }
+      outputLabelCreate.innerHTML = JSON.stringify(res, undefined, 2);
+    }).catch((err) => {
+      console.error("===err", err)
+      alert(`[${err}] Cannot post label`);
+    });
+    // Label list functions END
+  }
+</script>

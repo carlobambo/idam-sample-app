@@ -1,0 +1,86 @@
+<h5>Search</h5>
+<h6>[GET] /search</h6>
+<div class="col s4">
+  <div class="input-field col s6 hidden">
+    <input id="namespace" type="text" value="terega">
+    <label for="namespace">(If no API key) Enter your namespace</label>
+  </div>
+  <div class="col s12">
+    <button class="btn waves-effect waves-light blue darken-3" type="button" onClick="showSearch();">Open Search</button>
+  </div>
+</div>
+<script type="text/javascript">
+  // Containers
+  const searchResultsContainer = document.getElementById('result-cards');
+  const searchResultsItemsContainer = document.getElementById('searchList');
+  const searchBarContainer = document.getElementById('search-bar');
+
+  // Input fields
+  const inputApiKey = document.getElementById('apiKey');
+  const inputSearch = document.getElementById('search');
+  const inputNamespace = document.getElementById('namespace');
+
+
+  let searchText = '';
+  let offset = 1;
+  let matchType = '';
+  let sphereId = '';
+  let files = [];
+  let timeout;
+
+  // Search functions START
+  function hideSearch() {
+    searchBarContainer.classList.add('hidden');
+    searchResultsContainer.classList.add('hidden');
+    searchResultsItemsContainer.innerHTML = '';
+  }
+  function showSearch() {
+    searchBarContainer.classList.remove('hidden');
+    searchResultsContainer.classList.remove('hidden');
+    inputSearch.focus();
+  }
+  function searchFiles(e) {
+    // e.preventDefault();
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+    }
+    timeout = setTimeout(search, 1000);
+    function search() {
+      if (e.target.value !== searchText) {
+        offset = 1;
+        searchText = e.target.value;
+        files = [];
+        searchResultsItemsContainer.innerHTML = '';
+      }
+      const headers = {};
+      if (inputApiKey.value.length > 0) {
+        headers.Authorization = `Bearer ${inputApiKey.value}`;
+      }
+      fetch(`${searchApi}?query=${searchText}&offset=${offset}&matchType=${matchType}&sphereId=${sphereId}&namespace=${inputNamespace.value}`, {
+        headers: new Headers(headers),
+        method: 'GET',
+      }).then((res) => res.json())
+      .then((res) => {
+        const results = res.data.searches;
+        files = files.concat(results);
+        for (let i = 0; i < results.length; i++) {
+          searchResultsItemsContainer.innerHTML += `
+            <a class="carousel-item file-item" href="#!">
+              <img class="responsive-img item-img" src="${results[i].thumbnailUrl}" onerror="if (this.src != '${noImageUrl}') this.src = '${noImageUrl}';"/>
+              <div class="file-label" title="${results[i].name}">${results[i].name}</div>
+            </a>
+          `;
+        }
+        if (results.length == 0) {
+          searchResultsItemsContainer.innerHTML += `
+            <div>
+              No files found
+            </div>
+          `;
+        }
+      });
+    }
+    // Search functions END
+  }
+</script>

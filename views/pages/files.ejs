@@ -1,0 +1,249 @@
+<h5>File</h5>
+<h6>[GET] /files</h6>
+<form id="listForm" class="col s4" onSubmit="onFileList(event)">
+  <div class="row">
+    <div class="col s3">
+      <input id="filelist-limit" type="number" value="10">
+      <label for="filelist-limit">Count per page</label>
+    </div>
+    <div class="col s3">
+      <input id="filelist-page" type="number" value="0">
+      <label for="filelist-page">Page</label>
+    </div>
+    <div class="col s3">
+      <button class="btn waves-effect waves-light blue darken-3" type="submit">List</button>
+    </div>
+  </div>
+  <div class="row">
+    <div id="fileList"></div>
+  </div>
+</form>
+<h6>[POST] /files/upload</h6>
+<form id="uploadForm" class="col s4" onSubmit="onFileUpload(event)">
+  <div class="row">
+    <div class="col s12">
+      <input id="files" onChange="displayFiles();" multiple="multiple" type="file" style="display: none;" />
+      <button class="btn waves-effect waves-light blue darken-3" type="button" onClick="document.getElementById('files').click();">Select Files</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col s12">
+      <label>Sphere</label>
+      <label>
+        <input name="fileupload-sphere" value="1" type="radio" checked />
+        <span>Operations</span>
+      </label>
+      <label>
+        <input name="fileupload-sphere" value="2" type="radio" />
+        <span>Projects</span>
+      </label>
+      <label>
+        <input name="fileupload-sphere" value="3" type="radio" />
+        <span>Communication</span>
+      </label>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col s12">
+      <label>Access</label>
+      <label>
+        <input name="fileupload-privacy" value="STANDARD" type="radio" checked />
+        <span>Terega</span>
+      </label>
+      <label>
+        <input name="fileupload-privacy" value="CONFIDENTIAL" type="radio" />
+        <span>Confidential</span>
+      </label>
+      <label>
+        <input name="fileupload-privacy" value="PUBLIC" type="radio" />
+        <span>Public</span>
+      </label>
+    </div>
+  </div>
+  <div class="row">
+    <div class="input-field col s12">
+      <select multiple name="fileupload-label">
+        <option value="" disabled>Choose labels</option>
+      </select>
+      <label>Materialize Multiple Select</label>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col s12">
+      <button class="btn waves-effect waves-light blue darken-3" type="submit">Submit</button>
+      <button class="btn waves-effect waves-light white black-text" type="button" onClick="resetForm();">Reset</button>
+    </div>
+  </div>
+  <div class="row">
+    <table class="striped">
+      <thead>
+        <tr>
+            <th>File</th>
+            <th>Uploaded</th>
+        </tr>
+      </thead>
+      <tbody id="fileUploadList">
+        <tr><td colspan="2"><center>No files</center></td></tr>
+      </tbody>
+    </table>
+  </div>
+</form>
+<script>
+  // Containers
+  const fileUploadListContainer = document.getElementById('fileUploadList');
+  const fileListContainer = document.getElementById('fileList');
+
+  // Input fields
+  const inputFileUploadLabels = document.getElementsByName('fileupload-label');
+  const inputFileUploadPrivacy = document.getElementsByName('fileupload-privacy');
+  const inputFileUploadSphere = document.getElementsByName('fileupload-sphere');
+
+  let initializedInputFileUploadLabels;
+
+  // File upload functions START
+  function updateFileUploadLabels() {
+    const headers = {};
+    if (inputApiKey.value.length > 0) {
+      headers.Authorization = `Bearer ${inputApiKey.value}`;
+      fetch(`${labelsApi}`, {
+        headers: new Headers(headers),
+        method: 'GET',
+      }).then((res) => res.json())
+      .then((res) => {
+        console.log("===res", res)
+        if (res.errors) {
+          console.error("GET /labels", res.errors);
+          alert(`[${res.status}] Cannot list labels`);
+          return;
+        }
+        const results = res.data.labels;
+        for (let i = 0; i < results.length; i++) {
+          inputFileUploadLabels[0].innerHTML += `
+            <option value="${results[i].id}">${results[i].name}</option>
+          `;
+        }
+        initializedInputFileUploadLabels = M.FormSelect.init(inputFileUploadLabels);
+      })
+    } else {
+      inputFileUploadLabels[0].innerHTML += `
+        <option value="" disabled>Do step 1 first</option>
+      `;
+    }
+  }
+  function displayFiles() {
+    const files = document.getElementById('files').files;
+    fileUploadListContainer.innerHTML = '';
+    for (let i = 0; i < files.length; i++) {
+      const name = files[i].name;
+      fileUploadListContainer.innerHTML += `<tr id="file-${name}"><td>${name}</td><td>0%</td></tr>`;
+    }
+  }
+  function resetForm() {
+    fileUploadListContainer.innerHTML = '<tr><td colspan="2"><center>No files</center></td></tr>';
+    document.getElementById('uploadForm').reset();
+  }
+  function onFileUpload(event) {
+    event.preventDefault();
+    const files = document.getElementById('files').files;
+    // console.log("submitting===", files);
+
+    for (let i = 0; i < files.length; i++) {
+      const formData = new FormData();
+      const name = files[i].name;
+      const fileUploadDiv = document.getElementById(`file-${name}`);
+      formData.append(name, files[i]);
+      formData.append('labels', initializedInputFileUploadLabels[0].getSelectedValues());
+      for (let j = 0, length = inputFileUploadSphere.length; j < length; j++) {
+        if (inputFileUploadSphere[j].checked) {
+          formData.append('sphereId', inputFileUploadSphere[j].value);
+          break;
+        }
+      }
+      for (let j = 0, length = inputFileUploadPrivacy.length; j < length; j++) {
+        if (inputFileUploadPrivacy[j].checked) {
+          formData.append('privacy', inputFileUploadPrivacy[j].value);
+          break;
+        }
+      }
+      let hasError = false;
+      const xhr = new XMLHttpRequest();
+      // TODO: Supply headers needed for Apigee API
+      xhr.open('post', `${filesApi}/upload`, true);
+      xhr.setRequestHeader('Authorization', `Bearer ${inputApiKey.value}`);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percentage = ((e.loaded / e.total) * 100).toFixed(2);
+          console.log(name, `${percentage}%`);
+          fileUploadDiv.innerHTML = `<td>${name}</td><td>${percentage}%</td>`;
+        }
+      };
+
+      xhr.onerror = (e) => {
+        console.log(name, 'Error');
+        console.log(name, e);
+        hasError = true;
+      };
+      xhr.onload = () => {
+        console.log(name, this.statusText);
+      };
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState === 4) { // if complete
+          if (xhr.status === 200) { // check if "OK" (200)
+            // success
+          } else {
+            fileUploadDiv.innerHTML = `<td>${name}</td><td>0%</td>`;
+            alert(`[${xhr.status}] Cannot upload ${name}`);
+          }
+        }
+      };
+      xhr.send(formData);
+    }
+  }
+  // File upload functions END
+
+
+
+  // File list functions START
+  function onFileList(event) {
+    event.preventDefault();
+    limit = document.getElementById('filelist-limit').value;
+    offset = document.getElementById('filelist-page').value;
+    const headers = {};
+    if (inputApiKey.value.length > 0) {
+      headers.Authorization = `Bearer ${inputApiKey.value}`;
+    }
+    fetch(`${filesApi}?offset=${offset}&limit=${limit}`, {
+      headers: new Headers(headers),
+      method: 'GET',
+    }).then((res) => res.json())
+    .then((res) => {
+      console.log("===res", res)
+      if (res.errors) {
+        console.error("GET /files", res.errors);
+        alert(`[${res.status}] Cannot list files`);
+        return;
+      }
+      const results = res.data.files;
+      labels = labels.concat(results);
+      if (results.length == 0) {
+        fileListContainer.innerHTML += `
+          No files found
+        `;
+      } else {
+        fileListContainer.innerHTML = '';
+      }
+      for (let i = 0; i < results.length; i++) {
+        fileListContainer.innerHTML += `
+          <a class="carousel-item file-item" href="#!">
+            <img class="responsive-img item-img" src="${results[i].thumbnailUrl}" onerror="if (this.src != '${noImageUrl}') this.src = '${noImageUrl}';"/>
+            <div class="file-label" title="${results[i].name}">${results[i].name}</div>
+          </a>
+        `;
+      }
+    }).catch((err) => {
+      console.error("===err", err)
+      alert(`[${err}] Cannot list files`);
+    });
+  }
+  // File list functions END
+</script>
