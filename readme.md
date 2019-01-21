@@ -11,7 +11,7 @@ This tests file upload and search APIs. To test, please visit [the demo site](ht
 ## Local
 You can run and test this locally. First, clone this repository.
 
-    $ git clone git@bitbucket.org:Wizyio/idam-thirdparty.git
+    $ git clone https://github.com/carlobambo/idam-sample-app.git
 
 Then, install the packages
 
